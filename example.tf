@@ -43,6 +43,7 @@ resource "aws_elb" "loadbalancer" {
 }
 
 resource "aws_db_instance" "db1" {
+  apply_immediately      = "false"
   allocated_storage   = 20                   # https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_CreateDBInstance.html
   storage_type        = "gp2"
   engine              = "postgres"
@@ -51,5 +52,23 @@ resource "aws_db_instance" "db1" {
   name                = "usc_db1"
   username            = "${var.db_user}"
   password            = "${var.db_password}"
+  backup_retention_period = 5
   skip_final_snapshot = true
+}
+
+resource "aws_s3_bucket" "b" {
+  bucket = "new-bucket"
+  acl    = "private"
+}
+
+resource "aws_db_instance" "replica" {
+  identifier = "db-replica"
+  replicate_source_db = "${aws_db_instance.db1.id}"
+  allocated_storage   = 20                   # https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_CreateDBInstance.html
+  storage_type        = "gp2"
+  instance_class      = "db.t2.micro"
+  name                = "usc_db1-replica"
+  backup_retention_period = 5
+  backup_window           = "02:10-04:10"
+  final_snapshot_identifier = "uscdb1replica"
 }
